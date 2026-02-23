@@ -132,73 +132,95 @@ const DEFAULT_PRODUCTS: ProductResult[] = [
 function getProductsForQuery(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
   const words = q.split(/\s+/);
-  
   let results: ProductResult[] = [];
   
-  // First, try to match the full query
+  // Helper: check if product is relevant to query
+  const isRelevant = (title: string): boolean => {
+    const titleLower = title.toLowerCase();
+    // Must contain query keyword OR be in matched category
+    return words.some(w => w.length > 2 && titleLower.includes(w));
+  };
+  
+  // First, try to match exact query
   if (SAMPLE_DATABASE[q]) {
     results = [...SAMPLE_DATABASE[q]];
   }
   
-  // Then try matching individual words
+  // Then try matching individual words (limit to prevent too many)
   if (results.length < 5) {
     for (const word of words) {
       if (SAMPLE_DATABASE[word] && results.length < 20) {
-        results = [...results, ...SAMPLE_DATABASE[word]];
+        const newResults = SAMPLE_DATABASE[word].filter(p => isRelevant(p.title));
+        results = [...results, ...newResults];
       }
     }
   }
   
-  // Try partial matches
-  if (results.length < 5) {
+  // Try partial matches (only if still no results)
+  if (results.length < 3) {
     for (const key of Object.keys(SAMPLE_DATABASE)) {
       if (q.includes(key) || key.includes(q)) {
-        if (!results.find(r => SAMPLE_DATABASE[key].includes(r))) {
-          results = [...results, ...SAMPLE_DATABASE[key]];
+        const newResults = SAMPLE_DATABASE[key].filter(p => isRelevant(p.title));
+        if (newResults.length > 0) {
+          results = [...results, ...newResults];
         }
       }
-      if (results.length >= 30) break;
+      if (results.length >= 20) break;
     }
   }
   
-  // Generate dynamic products based on query
-  if (results.length < 10) {
+  // If still not enough, generate dynamic products (ALWAYS relevant to query)
+  if (results.length < 5) {
     const dynamicProducts = generateDynamicProducts(q);
     results = [...results, ...dynamicProducts];
   }
   
-  // Add default products to fill up
-  if (results.length < 20) {
-    results = [...results, ...DEFAULT_PRODUCTS];
+  // Only add default 3D printing supplies if query is related to 3D printing
+  const is3DPrintingQuery = q.includes("3d") || q.includes("printer") || q.includes("filament") || q.includes("print");
+  if (results.length < 10 && is3DPrintingQuery) {
+    results = [...results, ...DEFAULT_PRODUCTS.slice(0, 10)];
   }
   
-  return results.slice(0, 40);
+  // Final filter: ensure all results contain query keyword or are very relevant
+  const finalResults = results.filter((p, idx, arr) => {
+    // Keep first batch of results that are definitely relevant
+    if (idx < 20) return true;
+    // For remaining, be more lenient but still require some relevance
+    return isRelevant(p.title) || p.title.toLowerCase().includes("3d printed");
+  }).slice(0, 40);
+  
+  return finalResults;
 }
 
-// Generate more products based on search query
+// Generate highly relevant products based on search query
 function generateDynamicProducts(query: string): ProductResult[] {
-  const baseProducts = [
-    { suffix: "Kit", price: 45, reviews: 1200 },
-    { suffix: "Parts Set", price: 25, reviews: 800 },
-    { suffix: "DIY Module", price: 35, reviews: 600 },
-    { suffix: "Replacement Components", price: 18, reviews: 400 },
-    { suffix: "Accessory Pack", price: 22, reviews: 950 },
-    { suffix: "Custom Design", price: 55, reviews: 300 },
-    { suffix: "Professional Grade", price: 75, reviews: 200 },
-    { suffix: "Beginner Bundle", price: 38, reviews: 1500 },
-    { suffix: "Advanced Set", price: 89, reviews: 450 },
-    { suffix: "Starter Pack", price: 28, reviews: 2200 },
+  // Template products that work with any query
+  const baseTemplates = [
+    { suffix: "Custom Design", basePrice: 35 },
+    { suffix: "Personalized Kit", basePrice: 45 },
+    { suffix: "DIY Parts Set", basePrice: 25 },
+    { suffix: "Replacement Components", basePrice: 18 },
+    { suffix: "Accessory Pack", basePrice: 22 },
+    { suffix: "Professional Set", basePrice: 55 },
+    { suffix: "Beginner Bundle", basePrice: 28 },
+    { suffix: "Advanced Kit", basePrice: 65 },
+    { suffix: "Starter Pack", basePrice: 24 },
+    { suffix: "Premium Package", basePrice: 75 },
   ];
   
-  const q = query.toLowerCase();
-  return baseProducts.map((p, i) => ({
-    title: `3D Printed ${query.charAt(0).toUpperCase() + query.slice(1)} ${p.suffix}`,
-    price: `$${p.price}.99`,
-    url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${encodeURIComponent(p.suffix.toLowerCase())}`,
-    platform: "amazon",
-    rating: 4.0 + Math.random() * 0.8,
-    reviews: Math.floor(p.reviews * (0.5 + Math.random())),
-  }));
+  const q = query.toLowerCase().replace(/[^a-z0-9]/g, "");
+  
+  return baseTemplates.map((p) => {
+    const suffix = p.suffix.toLowerCase().replace(/ /g, "+");
+    return {
+      title: `3D Printed ${query.charAt(0).toUpperCase() + query.slice(1)} ${p.suffix}`,
+      price: `$${p.basePrice}.99`,
+      url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${suffix}`,
+      platform: "amazon",
+      rating: 4.2 + Math.random() * 0.6,
+      reviews: Math.floor(500 + Math.random() * 2000),
+    };
+  });
 }
 
 // Keepa API for real Amazon data
