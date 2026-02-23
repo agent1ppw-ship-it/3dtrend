@@ -11,41 +11,45 @@ interface ProductResult {
   type?: "product" | "printable";
 }
 
-// 3D printable ideas - things users can print themselves
+// 3D printable ideas - ALWAYS include the search term
 function generatePrintableIdeas(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
+  // Capitalize properly for display
+  const queryCapitalized = q.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   
-  const printableTemplates: Record<string, string[]> = {
-    robot: ["Bipedal Walking Robot", "Articulated Robot Hand", "Robot Gripper Claw", "Hexapod Spider Body", "Robot Head Case", "Motor Mount", "Robot Wheel", "Antenna Mount"],
-    case: ["Phone Case Model", "Tablet Stand", "Electronics Enclosure", "Battery Compartment", "Controller Grip", "Sensor Housing", "Project Box", "Mount Plate"],
-    holder: ["Pen Cup", "Tool Hook", "Cable Clip", "Phone Car Mount", "Headphone Stand", "Knife Holder", "Shelf Bracket", "Bottle Holder"],
-    phone: ["Kickstand Design", "Magnetic Mount", "Ring Holder", "Wireless Charger", "Phone Dock"],
-    drone: ["Landing Gear", "Propeller Guard", "Camera Gimbal", "Arm Bracket", "Battery Tray"],
-    art: ["Geometric Vase", "Parametric Design", "Figurine Bust", "Wall Panel", "Lamp Shade"],
-    jewelry: ["Ring Design", "Pendant Template", "Earrings", "Bracelet Link"],
-    toy: ["Fidget Spinner", "Marble Run", "Building Brick", "Puzzle Piece"],
-    home: ["Cabinet Handle", "Drawer Knob", "Shelf Bracket", "Switch Cover", "Coaster", "Plant Pot"],
-    gaming: ["Controller Button", "Joystick Cap", "Headset Hanger", "Cable Guide"],
-  };
+  // Generic suffixes that work with any search term
+  const suffixes = [
+    "Mount",
+    "Bracket",
+    "Stand",
+    "Holder",
+    "Case",
+    "Cover",
+    "Adapter",
+    "Replacement Part",
+  ];
   
-  let templates = printableTemplates.default || ["Snap-fit Joint", "Hinge", "Bearing Mount", "Gear Wheel", "Pulley", "Motor Bracket", "Sensor Mount", "Custom Enclosure"];
+  // Generate 8 ideas - ALWAYS including the search term
+  const ideas: ProductResult[] = [];
   
-  for (const key of Object.keys(printableTemplates)) {
-    if (q.includes(key) || key.includes(q)) {
-      templates = printableTemplates[key];
-      break;
-    }
+  for (let i = 0; i < 8; i++) {
+    const suffix = suffixes[i % suffixes.length];
+    
+    // ALWAYS put query term first and add suffix that makes sense
+    const title = `${queryCapitalized} ${suffix}`;
+    
+    ideas.push({
+      title,
+      price: "🖨️ Printable",
+      url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(title)}`,
+      platform: "printable",
+      type: "printable",
+      rating: undefined,
+      reviews: undefined,
+    });
   }
   
-  return templates.slice(0, 8).map((idea: string) => ({
-    title: idea,
-    price: "🖨️ Printable",
-    url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(idea + " " + query)}`,
-    platform: "printable",
-    type: "printable",
-    rating: undefined,
-    reviews: undefined,
-  }));
+  return ideas;
 }
 
 // Extended sample products database - 50+ items per category
