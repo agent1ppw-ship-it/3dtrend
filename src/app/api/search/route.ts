@@ -11,45 +11,101 @@ interface ProductResult {
   type?: "product" | "printable";
 }
 
-// 3D printable ideas - ALWAYS include the search term
+// 3D printable ideas - dynamically generated based on search term context
 function generatePrintableIdeas(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
-  // Capitalize properly for display
   const queryCapitalized = q.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   
-  // Generic suffixes that work with any search term
-  const suffixes = [
-    "Mount",
-    "Bracket",
-    "Stand",
-    "Holder",
-    "Case",
-    "Cover",
-    "Adapter",
-    "Replacement Part",
-  ];
-  
-  // Generate 8 ideas - ALWAYS including the search term
-  const ideas: ProductResult[] = [];
-  
-  for (let i = 0; i < 8; i++) {
-    const suffix = suffixes[i % suffixes.length];
+  // Context-aware printable ideas based on what the user might be interested in
+  const ideaTemplates: Record<string, string[]> = {
+    // Tech & Electronics
+    phone: ["Phone Stand", "Phone Case", "Phone Mount", "Wireless Charger Dock", "Phone Holder", "Phone Amplifier", "Phone Dock", "Phone Grip"],
+    tablet: ["Tablet Stand", "Tablet Case", "Tablet Mount", "Tablet Holder", "Tablet Dock", "E-Reader Case", "Tablet Stand Arm", "Tablet Cover"],
+    laptop: ["Laptop Stand", "Laptop Case", "Laptop Cooler", "Laptop Riser", "Laptop Cooling Pad", "Laptop Holder", "Laptop Shell", "Laptop Cooling Fan"],
+    computer: ["Monitor Stand", "Monitor Arm", "Keyboard Wrist Rest", "Cable Organizer", "PC Case Mod", "Headphone Stand", "Webcam Mount", "Desk Cable Tray"],
+    watch: ["Watch Stand", "Watch Winder", "Watch Holder", "Watch Band", "Watch Strap Adapter", "Watch Display", "Watch Charging Dock", "Smart Watch Mount"],
+    speaker: ["Speaker Stand", "Speaker Mount", "Speaker Bracket", "Speaker Box", "Speaker Grill", "Speaker Cover", "Speaker Stand Angle", "Speaker Housing"],
+    camera: ["Camera Mount", "Camera Tripod", "Camera Case", "Camera Bracket", "Lens Cap Holder", "Camera Slider", "GoPro Mount", "Drone Camera Mount"],
+    drone: ["Drone Landing Gear", "Drone Propeller Guard", "Drone Arm", "Drone Battery Holder", "Drone Camera Mount", "Drone Frame", "Drone Antenna Mount", "Drone Motor Mount"],
+    robot: ["Robot Arm", "Robot Gripper", "Robot Wheel", "Robot Chassis", "Robot Motor Mount", "Robot Sensor Housing", "Robot Body", "Robot Joint"],
+    gaming: ["Controller Stand", "Controller Grip", "Controller Shell", "Headphone Stand", "Joystick Base", "Arcade Button", "Gaming Chair Armrest", "VR Controller Mount"],
+    console: ["Console Stand", "Console Shell", "Controller Dock", "Console Vent", "Console Cover", "Game Card Holder", "Console Wall Mount", "Controller Charging Dock"],
     
-    // ALWAYS put query term first and add suffix that makes sense
-    const title = `${queryCapitalized} ${suffix}`;
+    // Home & Living
+    home: ["Cabinet Handle", "Drawer Knob", "Shelf Bracket", "Wall Hook", "Door Handle", "Light Switch Cover", "Outlet Cover", "Cable Clip"],
+    kitchen: ["Kitchen Tool Handle", "Cabinet Pull", "Drawer Organizer", "Spice Jar", "Knife Block", "Pot Lid Holder", "Utensil Holder", "Dish Rack"],
+    bathroom: ["Toothbrush Holder", "Towel Hook", "Shampoo Dispenser", "Razor Holder", "Mirror Frame", "Soap Dispenser", "Toilet Paper Holder", "Bathroom Hook"],
+    bedroom: ["Bedside Shelf", "Lamp Shade", "Picture Frame", "Jewelry Box", "Watch Stand", "Closet Hook", "Drawer Handle", "Mirror Mount"],
+    office: ["Desk Organizer", "Pen Holder", "Paper Tray", "Monitor Riser", "Cable Management", "Business Card Holder", "Desk Lamp Mount", "Whiteboard Marker Holder"],
     
-    ideas.push({
-      title,
-      price: "🖨️ Printable",
-      url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(title)}`,
-      platform: "printable",
-      type: "printable",
-      rating: undefined,
-      reviews: undefined,
-    });
+    // Creative & Art
+    art: ["Sculpture", "Figurine", "Vase", "Wall Art", "Lamp Shade", "Abstract Art", "Geometric Design", "Statue"],
+    jewelry: ["Ring", "Pendant", "Earrings", "Bracelet", "Necklace", "Cufflinks", "Charm", "Brooch"],
+    music: ["Guitar Pick", "Plectrum", "Music Stand", "Speaker Box", "Instrument Part", "Drum Mute", "Violin Chin Rest", "Headphone Hook"],
+    
+    // Toys & Games
+    toy: ["Fidget Spinner", "Toy Car", "Building Block", "Puzzle Piece", "Game Token", "Marble Run", "Action Figure", "Yo-yo"],
+    lego: ["Lego-compatible Brick", "Lego Figure", "Lego Baseplate", "Lego Gear", "Lego Wheel", "Lego Antenna", "Lego Connector", "Lego Brick Organizer"],
+    
+    // Tools & Parts
+    tool: ["Tool Handle", "Tool Bracket", "Tool Hook", "Wrench Holder", "Screwdriver Handle", "Drill Bit Holder", "Measuring Tool Case", "Safety Goggle Frame"],
+    car: ["Car Phone Mount", "Car Air Vent Mount", "Car Cup Holder", "Car Dashboard Mount", "License Plate Frame", "Car Vent Clip", "Car Phone Stand", "Car Accessory"],
+    bike: ["Bike Phone Mount", "Bike Light Mount", "Bike Bottle Holder", "Bike Handlebar Mount", "Bike Sensor Mount", "Bike GPS Mount", "Bike Bell", "Bike Mount Bracket"],
+    
+    // Outdoor & Sports
+    sports: ["Water Bottle Holder", "Gym Equipment Part", "Bike Mount", "Camera Mount", "GPS Mount", "Sports Equipment Adapter", "Helmet Mount", "Ball Display Stand"],
+    garden: ["Plant Pot", "Garden Tool Handle", "Garden Stake", "Plant Label", "Garden Hose Adapter", "Bird Feeder", "Garden Markers", "Potting Shed Hook"],
+    pet: ["Pet Bowl Holder", "Pet Toy", "Pet Collar Tag", "Pet Bed Part", "Pet Leash Hook", "Pet Door Flap", "Pet Tag", "Pet Cage Accessory"],
+  };
+  
+  // Find matching category or use default
+  let templates: string[] = [];
+  let foundCategory = false;
+  
+  // Try exact match first
+  for (const key of Object.keys(ideaTemplates)) {
+    if (q === key || q.includes(key)) {
+      templates = ideaTemplates[key];
+      foundCategory = true;
+      break;
+    }
   }
   
-  return ideas;
+  // If no match, try partial match
+  if (!foundCategory) {
+    for (const key of Object.keys(ideaTemplates)) {
+      if (key.includes(q) || q.includes(key)) {
+        templates = ideaTemplates[key];
+        foundCategory = true;
+        break;
+      }
+    }
+  }
+  
+  // Default generic but useful ideas
+  if (templates.length === 0) {
+    templates = [
+      `${queryCapitalized} Mount`,
+      `${queryCapitalized} Bracket`,
+      `${queryCapitalized} Stand`,
+      `${queryCapitalized} Holder`,
+      `${queryCapitalized} Case`,
+      `${queryCapitalized} Cover`,
+      `${queryCapitalized} Adapter`,
+      `${queryCapitalized} Replacement`,
+    ];
+  }
+  
+  // Map to results
+  return templates.slice(0, 8).map((idea: string) => ({
+    title: idea,
+    price: "🖨️ Printable",
+    url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(idea)}`,
+    platform: "printable",
+    type: "printable",
+    rating: undefined,
+    reviews: undefined,
+  }));
 }
 
 // Extended sample products database - 50+ items per category
