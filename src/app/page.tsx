@@ -48,7 +48,6 @@ export default function Home() {
           </div>
           <nav className="flex items-center gap-6">
             <Link href="/" className="text-[#22c55e] font-medium">Trending</Link>
-            <Link href="/dashboard" className="text-zinc-400 hover:text-white transition">Search</Link>
             <Link href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</Link>
           </nav>
         </div>
@@ -144,12 +143,7 @@ export default function Home() {
 
         {/* CTA */}
         <div className="mt-12 text-center">
-          <Link
-            href="/dashboard"
-            className="inline-block px-8 py-4 bg-[#22c55e] text-black font-semibold rounded-xl hover:bg-[#16a34a] transition"
-          >
-            Start Searching →
-          </Link>
+          <p className="text-zinc-400 mb-4">Explore thousands of free STL files on Thingiverse and Printables</p>
         </div>
       </main>
     </div>
