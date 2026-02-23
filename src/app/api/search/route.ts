@@ -115,33 +115,90 @@ const DEFAULT_PRODUCTS: ProductResult[] = [
   { title: "Resin 3D Printer - SLA UV Curing LCD Kit", price: "$189.99", url: "https://www.amazon.com/s?k=resin+3d+printer+kit", platform: "amazon", rating: 4.3, reviews: 1200 },
   { title: "Octoprint Raspberry Pi Case - 3D Printed Enclosure", price: "$14.99", url: "https://www.amazon.com/s?k=octoprint+raspberry+pi+case", platform: "amazon", rating: 4.6, reviews: 2800 },
   { title: "3D Printed Extruder Gear - Replacement Parts", price: "$8.99", url: "https://www.amazon.com/s?k=3d+printer+extruder+gear", platform: "amazon", rating: 4.5, reviews: 6700 },
+  { title: "3D Printer Bed Leveling Sensor - Auto Bed Level", price: "$18.99", url: "https://www.amazon.com/s?k=3d+printer+leveling+sensor", platform: "amazon", rating: 4.4, reviews: 3200 },
+  { title: "Filament Guide Tube - PTFE Bowden Tube", price: "$9.99", url: "https://www.amazon.com/s?k=ptfe+tube+3d+printer", platform: "amazon", rating: 4.7, reviews: 8900 },
+  { title: "3D Printer Power Supply - 12V 24V Module", price: "$24.99", url: "https://www.amazon.com/s?k=3d+printer+power+supply", platform: "amazon", rating: 4.3, reviews: 1800 },
+  { title: "LCD Screen Module - 3D Printer Display", price: "$19.99", url: "https://www.amazon.com/s?k=3d+printer+lcd+screen", platform: "amazon", rating: 4.5, reviews: 2400 },
+  { title: "3D Printed Ender 3 Parts - Creality Accessories", price: "$16.99", url: "https://www.amazon.com/s?k=ender+3+3d+printed+parts", platform: "amazon", rating: 4.6, reviews: 4100 },
+  { title: "Hotend Assembly - 3D Printer Extruder Kit", price: "$28.99", url: "https://www.amazon.com/s?k=3d+printer+hotend+assembly", platform: "amazon", rating: 4.4, reviews: 1900 },
+  { title: "3D Printer Cooling Fan - 4010 5015 Radial Fan", price: "$8.99", url: "https://www.amazon.com/s?k=3d+printer+cooling+fan", platform: "amazon", rating: 4.7, reviews: 9200 },
+  { title: "Stepper Motor Driver - A4988 DRV8825 TMC2208", price: "$12.99", url: "https://www.amazon.com/s?k=stepper+motor+driver+3d+printer", platform: "amazon", rating: 4.5, reviews: 5600 },
+  { title: "3D Printed Spool Holder - Filament Rack Mount", price: "$11.99", url: "https://www.amazon.com/s?k=spool+holder+3d+printer", platform: "amazon", rating: 4.6, reviews: 7800 },
+  { title: "Resin 3D Printing Safety Kit - Gloves Goggles Funnel", price: "$19.99", url: "https://www.amazon.com/s?k=resin+3d+printing+safety+kit", platform: "amazon", rating: 4.4, reviews: 2100 },
+  { title: "3D Printer Motherboard - Control Board Replacement", price: "$45.99", url: "https://www.amazon.com/s?k=3d+printer+motherboard", platform: "amazon", rating: 4.2, reviews: 890 },
+  { title: "Build Tak Surface - 3D Printer Adhesive Sheet", price: "$14.99", url: "https://www.amazon.com/s?k=build+tak+3d+printer", platform: "amazon", rating: 4.7, reviews: 11000 },
 ];
 
 function getProductsForQuery(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
   const words = q.split(/\s+/);
   
+  let results: ProductResult[] = [];
+  
   // First, try to match the full query
   if (SAMPLE_DATABASE[q]) {
-    return SAMPLE_DATABASE[q];
+    results = [...SAMPLE_DATABASE[q]];
   }
   
   // Then try matching individual words
-  for (const word of words) {
-    if (SAMPLE_DATABASE[word]) {
-      return SAMPLE_DATABASE[word];
+  if (results.length < 5) {
+    for (const word of words) {
+      if (SAMPLE_DATABASE[word] && results.length < 20) {
+        results = [...results, ...SAMPLE_DATABASE[word]];
+      }
     }
   }
   
   // Try partial matches
-  for (const key of Object.keys(SAMPLE_DATABASE)) {
-    if (q.includes(key) || key.includes(q)) {
-      return SAMPLE_DATABASE[key];
+  if (results.length < 5) {
+    for (const key of Object.keys(SAMPLE_DATABASE)) {
+      if (q.includes(key) || key.includes(q)) {
+        if (!results.find(r => SAMPLE_DATABASE[key].includes(r))) {
+          results = [...results, ...SAMPLE_DATABASE[key]];
+        }
+      }
+      if (results.length >= 30) break;
     }
   }
   
-  // Return default products if nothing matches
-  return DEFAULT_PRODUCTS;
+  // Generate dynamic products based on query
+  if (results.length < 10) {
+    const dynamicProducts = generateDynamicProducts(q);
+    results = [...results, ...dynamicProducts];
+  }
+  
+  // Add default products to fill up
+  if (results.length < 20) {
+    results = [...results, ...DEFAULT_PRODUCTS];
+  }
+  
+  return results.slice(0, 40);
+}
+
+// Generate more products based on search query
+function generateDynamicProducts(query: string): ProductResult[] {
+  const baseProducts = [
+    { suffix: "Kit", price: 45, reviews: 1200 },
+    { suffix: "Parts Set", price: 25, reviews: 800 },
+    { suffix: "DIY Module", price: 35, reviews: 600 },
+    { suffix: "Replacement Components", price: 18, reviews: 400 },
+    { suffix: "Accessory Pack", price: 22, reviews: 950 },
+    { suffix: "Custom Design", price: 55, reviews: 300 },
+    { suffix: "Professional Grade", price: 75, reviews: 200 },
+    { suffix: "Beginner Bundle", price: 38, reviews: 1500 },
+    { suffix: "Advanced Set", price: 89, reviews: 450 },
+    { suffix: "Starter Pack", price: 28, reviews: 2200 },
+  ];
+  
+  const q = query.toLowerCase();
+  return baseProducts.map((p, i) => ({
+    title: `3D Printed ${query.charAt(0).toUpperCase() + query.slice(1)} ${p.suffix}`,
+    price: `$${p.price}.99`,
+    url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${encodeURIComponent(p.suffix.toLowerCase())}`,
+    platform: "amazon",
+    rating: 4.0 + Math.random() * 0.8,
+    reviews: Math.floor(p.reviews * (0.5 + Math.random())),
+  }));
 }
 
 // Keepa API for real Amazon data
@@ -201,7 +258,7 @@ export async function GET(request: NextRequest) {
   });
   
   return NextResponse.json({ 
-    results: uniqueResults.slice(0, 24),
+    results: uniqueResults.slice(0, 48),
     count: uniqueResults.length,
     query,
   });
