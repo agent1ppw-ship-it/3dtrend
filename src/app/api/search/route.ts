@@ -151,33 +151,27 @@ const SAMPLE_DATABASE: Record<string, ProductResult[]> = {
   ],
 };
 
-// Generate free STL files for any search query - with more diverse, keyword-specific variations
+// Generate free STL files for any search query - unique per keyword
 function generateSTLFiles(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
   const queryCapitalized = q.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   
-  // More diverse and relevant suffixes for any keyword
-  const stlTemplates = [
-    { title: `${queryCapitalized} Design`, suffix: "Free STL", platform: "thingiverse" },
-    { title: `${queryCapitalized} Model`, suffix: "STL File", platform: "thingiverse" },
-    { title: `${queryCapitalized}`, suffix: "3D Print", platform: "thingiverse" },
-    { title: `DIY ${queryCapitalized}`, suffix: "Project", platform: "thingiverse" },
-    { title: `Custom ${queryCapitalized}`, suffix: "Prototype", platform: "thingiverse" },
-    { title: `${queryCapitalized}`, suffix: "Printable", platform: "printables" },
-    { title: `Parametric ${queryCapitalized}`, suffix: "Model", platform: "printables" },
-    { title: `${queryCapitalized}`, suffix: "Download", platform: "printables" },
-    { title: `Modern ${queryCapitalized}`, suffix: "Design", platform: "thingiverse" },
-    { title: `${queryCapitalized}`, suffix: "Template", platform: "thingiverse" },
-    { title: `Minimalist ${queryCapitalized}`, suffix: "STL", platform: "printables" },
-    { title: `${queryCapitalized}`, suffix: "File", platform: "thingiverse" },
+  // Each template is unique - NO repeated suffixes
+  const items = [
+    { title: `${queryCapitalized} Design - Free STL`, url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`, platform: "thingiverse" },
+    { title: `${queryCapitalized} 3D Model Download`, url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`, platform: "thingiverse" },
+    { title: `DIY ${queryCapitalized} Project`, url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`, platform: "thingiverse" },
+    { title: `Custom ${queryCapitalized} Prototype`, url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`, platform: "thingiverse" },
+    { title: `${queryCapitalized} - Prusa Print File`, url: `https://www.printables.com/search/models?keyword=${encodeURIComponent(q)}`, platform: "printables" },
+    { title: `Parametric ${queryCapitalized} Model`, url: `https://www.printables.com/search/models?keyword=${encodeURIComponent(q)}`, platform: "printables" },
+    { title: `${queryCapitalized} STL File`, url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`, platform: "thingiverse" },
+    { title: `${queryCapitalized} Printable`, url: `https://www.printables.com/search/models?keyword=${encodeURIComponent(q)}`, platform: "printables" },
   ];
   
-  return stlTemplates.map((item) => ({
-    title: `${item.title} - ${item.suffix}`,
+  return items.map((item) => ({
+    title: item.title,
     price: "Free",
-    url: item.platform === "thingiverse"
-      ? `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`
-      : `https://www.printables.com/search/models?keyword=${encodeURIComponent(q)}`,
+    url: item.url,
     platform: item.platform,
     rating: 4.5,
     reviews: Math.floor(Math.random() * 10000) + 1000,
