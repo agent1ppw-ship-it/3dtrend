@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Filter, ExternalLink, Bookmark, BookmarkCheck } from "lucide-react";
+import { Search, Filter, ExternalLink, Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface SearchResult {
   title: string;
@@ -12,10 +12,17 @@ interface SearchResult {
   image?: string;
 }
 
+interface TrendsData {
+  interest: number;
+  trend: "up" | "down" | "stable";
+  dataPoints: number;
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState(query);
   const [platform, setPlatform] = useState("all");
@@ -33,9 +40,11 @@ function DashboardContent() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&platform=${platform}`);
       const data = await res.json();
       setResults(data.results || []);
+      setTrends(data.trends || null);
     } catch (error) {
       console.error("Search error:", error);
       setResults([]);
+      setTrends(null);
     } finally {
       setLoading(false);
     }
@@ -58,6 +67,18 @@ function DashboardContent() {
     amazon: "bg-orange-500",
     ebay: "bg-blue-500",
     etsy: "bg-yellow-500",
+  };
+
+  const getTrendIcon = (trend: string) => {
+    if (trend === "up") return <TrendingUp className="w-5 h-5 text-green-500" />;
+    if (trend === "down") return <TrendingDown className="w-5 h-5 text-red-500" />;
+    return <Minus className="w-5 h-5 text-zinc-500" />;
+  };
+
+  const getTrendColor = (trend: string) => {
+    if (trend === "up") return "text-green-500";
+    if (trend === "down") return "text-red-500";
+    return "text-zinc-500";
   };
 
   return (
@@ -136,6 +157,36 @@ function DashboardContent() {
             Etsy
           </button>
         </div>
+
+        {/* Trends Card */}
+        {trends && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <TrendingUp className="w-6 h-6 text-[#22c55e]" />
+              <h3 className="text-xl font-bold">Search Trends</h3>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div>
+                <p className="text-zinc-400 text-sm mb-1">Interest Score</p>
+                <p className="text-3xl font-bold text-[#22c55e]">{trends.interest}</p>
+              </div>
+              <div>
+                <p className="text-zinc-400 text-sm mb-1">Trend Direction</p>
+                <div className="flex items-center gap-2">
+                  {getTrendIcon(trends.trend)}
+                  <span className={`text-xl font-bold capitalize ${getTrendColor(trends.trend)}`}>
+                    {trends.trend}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-zinc-400 text-sm mb-1">Data Points</p>
+                <p className="text-3xl font-bold">{trends.dataPoints}</p>
+                <p className="text-zinc-500 text-xs">Last 12 months</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Results */}
         {loading ? (

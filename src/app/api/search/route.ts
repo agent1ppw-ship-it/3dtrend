@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import googleTrends from "google-trends-api";
 
 // 3D printing related keywords to filter results
 const PRINT_KEYWORDS = [
@@ -19,9 +20,42 @@ function is3DPrintRelated(title: string, query: string): boolean {
   return PRINT_KEYWORDS.some(keyword => lowerTitle.includes(keyword.toLowerCase()));
 }
 
-function extractPrice(text: string): string {
-  const match = text.match(/\$[\d,]+\.?\d*/);
-  return match ? match[0] : "N/A";
+async function getGoogleTrends(query: string): Promise<any> {
+  try {
+    const interestOverTime = await googleTrends.interestOverTime({
+      keyword: query + " 3d printed",
+      geo: "US",
+      timeframe: "today 12-m",
+    });
+    
+    const data = JSON.parse(interestOverTime);
+    
+    if (data.default?.timelineData) {
+      const timelineData = data.default.timelineData;
+      
+      // Get recent trend (last 7 data points average)
+      const recentPoints = timelineData.slice(-7);
+      const avgInterest = Math.round(
+        recentPoints.reduce((sum: number, point: any) => sum + (point.value?.[0] || 0), 0) / recentPoints.length
+      );
+      
+      // Get trend direction
+      const recent = recentPoints[recentPoints.length - 1]?.value?.[0] || 0;
+      const older = recentPoints[0]?.value?.[0] || 0;
+      const trend = recent > older ? "up" : recent < older ? "down" : "stable";
+      
+      return {
+        interest: avgInterest,
+        trend,
+        dataPoints: timelineData.length,
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.log("Google Trends error:", error);
+    return null;
+  }
 }
 
 async function searchAmazon(query: string): Promise<any[]> {
@@ -166,16 +200,17 @@ export async function GET(request: NextRequest) {
   const platform = searchParams.get("platform") || "all";
   
   if (!query) {
-    return NextResponse.json({ results: [] });
+    return NextResponse.json({ results: [], trends: null });
   }
   
   const allResults: any[] = [];
   
   // Run searches in parallel
-  const [amazonResults, ebayResults, etsyResults] = await Promise.allSettled([
+  const [amazonResults, ebayResults, etsyResults, trendsData] = await Promise.allSettled([
     platform === "etsy" ? [] : searchAmazon(query),
     platform === "amazon" ? [] : searchEbay(query),
     platform === "amazon" ? [] : searchEtsy(query),
+    getGoogleTrends(query),
   ]);
   
   if (amazonResults.status === "fulfilled") {
@@ -188,6 +223,12 @@ export async function GET(request: NextRequest) {
     allResults.push(...etsyResults.value);
   }
   
+  // Get trends data
+  let trends = null;
+  if (trendsData.status === "fulfilled" && trendsData.value) {
+    trends = trendsData.value;
+  }
+  
   // Remove duplicates
   const seen = new Set();
   const uniqueResults = allResults.filter(item => {
@@ -197,5 +238,8 @@ export async function GET(request: NextRequest) {
     return true;
   });
   
-  return NextResponse.json({ results: uniqueResults });
+  return NextResponse.json({ 
+    results: uniqueResults,
+    trends 
+  });
 }
