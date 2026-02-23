@@ -31,16 +31,29 @@ function generatePrintableIdeas(query: string): ProductResult[] {
     kitchen: ["Spice Rack", "Knife Block", "Utensil Jar", "Drawer Organizer"],
   };
   
-  let templates = ideaTemplates.default || ["Mount", "Bracket", "Stand", "Holder", "Case", "Cover", "Adapter", "Replacement"];
+  let templates: string[] = [];
+  let foundMatch = false;
+  
   for (const key of Object.keys(ideaTemplates)) {
     if (q.includes(key) || key.includes(q)) {
       templates = ideaTemplates[key];
+      foundMatch = true;
       break;
     }
   }
   
-  if (templates === ideaTemplates.default) {
-    templates = [`Custom ${queryCapitalized}`, `${queryCapitalized} Prototype`, `DIY ${queryCapitalized}`, `${queryCapitalized} Model`, `${queryCapitalized} Design`, `${queryCapitalized} Pattern`, `${queryCapitalized} Component`, `${queryCapitalized} Part`];
+  // Default fallback
+  if (!foundMatch) {
+    templates = [
+      `Custom ${queryCapitalized} Design`,
+      `${queryCapitalized} Prototype`,
+      `DIY ${queryCapitalized}`,
+      `${queryCapitalized} Model`,
+      `${queryCapitalized} Pattern`,
+      `${queryCapitalized} Component`,
+      `${queryCapitalized} Part`,
+      `${queryCapitalized} Template`,
+    ];
   }
   
   return templates.slice(0, 8).map((idea: string) => ({
