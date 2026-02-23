@@ -151,29 +151,33 @@ const SAMPLE_DATABASE: Record<string, ProductResult[]> = {
   ],
 };
 
-// Generate free STL files for any search query
+// Generate free STL files for any search query - with more diverse, keyword-specific variations
 function generateSTLFiles(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
-  const queryCapitalized = query.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const queryCapitalized = q.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   
-  // Generic STL ideas that work with any query
+  // More diverse and relevant suffixes for any keyword
   const stlTemplates = [
-    { title: `${queryCapitalized} Design - Free STL`, platform: "thingiverse" },
-    { title: `${queryCapitalized} Model - STL File`, platform: "thingiverse" },
-    { title: `${queryCapitalized} 3D Model - Free Download`, platform: "thingiverse" },
-    { title: `DIY ${queryCapitalized} - Print File`, platform: "thingiverse" },
-    { title: `${queryCapitalized} Prototype - STL`, platform: "thingiverse" },
-    { title: `${queryCapitalized} - Prusa Print File`, platform: "printables" },
-    { title: `Custom ${queryCapitalized} - Free STL`, platform: "printables" },
-    { title: `${queryCapitalized} CAD Design - Download`, platform: "printables" },
+    { title: `${queryCapitalized} Design`, suffix: "Free STL", platform: "thingiverse" },
+    { title: `${queryCapitalized} Model`, suffix: "STL File", platform: "thingiverse" },
+    { title: `${queryCapitalized}`, suffix: "3D Print", platform: "thingiverse" },
+    { title: `DIY ${queryCapitalized}`, suffix: "Project", platform: "thingiverse" },
+    { title: `Custom ${queryCapitalized}`, suffix: "Prototype", platform: "thingiverse" },
+    { title: `${queryCapitalized}`, suffix: "Printable", platform: "printables" },
+    { title: `Parametric ${queryCapitalized}`, suffix: "Model", platform: "printables" },
+    { title: `${queryCapitalized}`, suffix: "Download", platform: "printables" },
+    { title: `Modern ${queryCapitalized}`, suffix: "Design", platform: "thingiverse" },
+    { title: `${queryCapitalized}`, suffix: "Template", platform: "thingiverse" },
+    { title: `Minimalist ${queryCapitalized}`, suffix: "STL", platform: "printables" },
+    { title: `${queryCapitalized}`, suffix: "File", platform: "thingiverse" },
   ];
   
   return stlTemplates.map((item) => ({
-    title: item.title,
+    title: `${item.title} - ${item.suffix}`,
     price: "Free",
     url: item.platform === "thingiverse"
-      ? `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(query)}`
-      : `https://www.printables.com/search/models?keyword=${encodeURIComponent(query)}`,
+      ? `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(q)}`
+      : `https://www.printables.com/search/models?keyword=${encodeURIComponent(q)}`,
     platform: item.platform,
     rating: 4.5,
     reviews: Math.floor(Math.random() * 10000) + 1000,
