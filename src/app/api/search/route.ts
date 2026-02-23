@@ -384,21 +384,14 @@ async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
   }
   
   try {
-    // Search Google Shopping for 3D printed items
-    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google_shopping&api_key=${apiKey}&num=20`;
-    console.log("Calling SerpAPI with key:", apiKey ? "key present" : "NO KEY");
+    // Try Google Shopping first (may need paid plan)
+    let url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google_shopping&api_key=${apiKey}&num=20`;
     
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    const data = await res.json();
+    let res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    let data = await res.json();
     
-    console.log("SerpAPI response:", JSON.stringify(data).slice(0, 500));
-    
-    if (data.error) {
-      console.log("SerpAPI error:", data.error);
-      return [];
-    }
-    
-    if (data.shopping_results) {
+    // If shopping results work, use them
+    if (data.shopping_results && data.shopping_results.length > 0) {
       return data.shopping_results.slice(0, 15).map((item: any) => ({
         title: item.title || "Unknown Product",
         price: item.price || item.extracted_price ? `$${item.extracted_price || item.price}` : "Check Price",
@@ -409,6 +402,32 @@ async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
         reviews: item.reviews,
       }));
     }
+    
+    // Fall back to regular Google search and extract shopping info
+    console.log("Trying regular Google search...");
+    url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google&api_key=${apiKey}&num=20`;
+    
+    res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    data = await res.json();
+    
+    // Extract product results from organic results
+    if (data.organic_results) {
+      const products: ProductResult[] = [];
+      for (const result of data.organic_results.slice(0, 15)) {
+        if (result.title && (result.title.toLowerCase().includes("3d") || result.title.toLowerCase().includes("printed"))) {
+          products.push({
+            title: result.title,
+            price: result.price || "Check Price",
+            url: result.link || result.url || "",
+            platform: result.source || "google",
+            image: result.thumbnail,
+          });
+        }
+      }
+      if (products.length > 0) return products;
+    }
+    
+    console.log("SerpAPI returned no shopping results");
     return [];
   } catch (e) {
     console.log("SerpAPI exception:", e);
