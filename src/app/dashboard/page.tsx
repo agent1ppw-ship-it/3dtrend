@@ -18,13 +18,15 @@ interface SearchResult {
 
 const PLATFORMS = [
   { id: "all", name: "All Platforms" },
+  { id: "amazon", name: "Amazon", color: "bg-orange-500" },
+  { id: "walmart", name: "Walmart", color: "bg-blue-500" },
+  { id: "target", name: "Target", color: "bg-red-500" },
+  { id: "ebay", name: "eBay", color: "bg-blue-600" },
+  { id: "etsy", name: "Etsy", color: "bg-yellow-500" },
   { id: "thingiverse", name: "Thingiverse", color: "bg-green-600" },
   { id: "printables", name: "Printables", color: "bg-orange-600" },
-  { id: "stlfinder", name: "STL Finder", color: "bg-purple-600" },
-  { id: "yeggi", name: "Yeggi", color: "bg-pink-600" },
-  { id: "etsy", name: "Etsy", color: "bg-yellow-500" },
-  { id: "ebay", name: "eBay", color: "bg-blue-500" },
-  { id: "amazon", name: "Amazon", color: "bg-orange-500" },
+  { id: "shopping", name: "Google", color: "bg-blue-400" },
+  { id: "google", name: "Google", color: "bg-blue-400" },
 ];
 
 function DashboardContent() {

@@ -435,6 +435,68 @@ async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
   }
 }
 
+// Try multiple free APIs to get real product data
+async function searchMultiplePlatforms(searchQuery: string): Promise<ProductResult[]> {
+  const results: ProductResult[] = [];
+  
+  // Try SerpAPI first
+  const serpResults = await searchSerpAPI(searchQuery);
+  if (serpResults.length > 0) {
+    results.push(...serpResults);
+  }
+  
+  // Try Keepa (Amazon specific)
+  if (results.length < 5) {
+    const keepaResults = await searchKeepa(searchQuery);
+    if (keepaResults.length > 0) {
+      results.push(...keepaResults);
+    }
+  }
+  
+  // Try Walmart API (sometimes accessible)
+  if (results.length < 5) {
+    const walmartResults = await searchWalmart(searchQuery);
+    if (walmartResults.length > 0) {
+      results.push(...walmartResults);
+    }
+  }
+  
+  return results;
+}
+
+// Walmart API search
+async function searchWalmart(searchQuery: string): Promise<ProductResult[]> {
+  try {
+    const url = `https://www.walmart.com/search?q=${encodeURIComponent(searchQuery)}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+      signal: AbortSignal.timeout(8000),
+    });
+    const html = await res.text();
+    
+    if (html.length > 3000) {
+      // Try to extract product data from JSON
+      const jsonMatch = html.match(/window\.__WML_REDUX_INITIAL_STATE__\s*=\s*({[\s\S]*?});/);
+      if (jsonMatch) {
+        try {
+          const state = JSON.parse(jsonMatch[1]);
+          const products = state?.general?.search?.searchEntities?.entities || [];
+          return products.slice(0, 10).map((p: any) => ({
+            title: p.title?.raw || p.name || "Unknown",
+            price: p.price?.current?.amount ? `$${p.price.current.amount}` : "Check Price",
+            url: p.productPageUrl || `https://www.walmart.com/search?q=${encodeURIComponent(p.name)}`,
+            platform: "walmart",
+            image: p.imageUrl,
+          }));
+        } catch {}
+      }
+    }
+  } catch (e) {
+    console.log("Walmart error:", e);
+  }
+  return [];
+}
+
 // Keepa API for real Amazon data (fallback)
 async function searchKeepa(searchQuery: string): Promise<ProductResult[]> {
   const apiKey = process.env.KEEPA_API_KEY;
