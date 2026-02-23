@@ -378,13 +378,25 @@ function generateRandomProducts(query: string, words: string[]): ProductResult[]
 // SerpAPI for real Amazon/Google Shopping results
 async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
   const apiKey = process.env.SERPAPI_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) {
+    console.log("No SerpAPI key found");
+    return [];
+  }
   
   try {
     // Search Google Shopping for 3D printed items
-    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google_shopping&api_key=${apiKey}`;
+    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google_shopping&api_key=${apiKey}&num=20`;
+    console.log("Calling SerpAPI with key:", apiKey ? "key present" : "NO KEY");
+    
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     const data = await res.json();
+    
+    console.log("SerpAPI response:", JSON.stringify(data).slice(0, 500));
+    
+    if (data.error) {
+      console.log("SerpAPI error:", data.error);
+      return [];
+    }
     
     if (data.shopping_results) {
       return data.shopping_results.slice(0, 15).map((item: any) => ({
@@ -399,7 +411,7 @@ async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
     }
     return [];
   } catch (e) {
-    console.log("SerpAPI error:", e);
+    console.log("SerpAPI exception:", e);
     return [];
   }
 }
