@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, ExternalLink, TrendingUp, TrendingDown, Minus, Package } from "lucide-react";
+import { Search, ExternalLink, Package, Star } from "lucide-react";
 
 interface SearchResult {
   title: string;
@@ -11,12 +11,8 @@ interface SearchResult {
   url: string;
   platform: string;
   image?: string;
-}
-
-interface TrendsData {
-  interest: number;
-  trend: "up" | "down" | "stable";
-  dataPoints: number;
+  rating?: number;
+  reviews?: number;
 }
 
 const PLATFORMS = [
@@ -113,7 +109,7 @@ function DashboardContent() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for 3D printed products..."
+                placeholder="Search for 3D printed products (robot, case, holder, etc)..."
                 className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-lg focusoutline-none focus:border-[#22c55e] transition"
               />
             </div>
@@ -143,7 +139,7 @@ function DashboardContent() {
           ))}
         </div>
 
-        {/* Results */}
+        {/* Results Grid */}
         {loading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -152,49 +148,62 @@ function DashboardContent() {
         ) : results.length > 0 ? (
           <div>
             <p className="text-zinc-400 mb-4">{results.length} results found</p>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {results.map((item, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition">
-                  {item.image && (
-                    <img src={item.image} alt="" className="w-16 h-16 object-contain rounded bg-zinc-800" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPlatformColor(item.platform)} text-white`}>
-                        {getPlatformName(item.platform)}
-                      </span>
-                    </div>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white font-medium hover:text-[#22c55e] transition block truncate"
-                    >
-                      {item.title}
-                    </a>
-                    <p className="text-[#22c55e] font-bold text-lg mt-1">{item.price}</p>
+                <a
+                  key={i}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-zinc-900 rounded-xl border border-zinc-800 hover:border-[#22c55e] transition p-4 group"
+                >
+                  {/* Platform Badge */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPlatformColor(item.platform)} text-white`}>
+                      {getPlatformName(item.platform)}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-zinc-600 group-hover:text-[#22c55e]" />
                   </div>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-lg hover:bg-zinc-800 transition"
-                  >
-                    <ExternalLink className="w-5 h-5 text-zinc-400" />
-                  </a>
-                </div>
+                  
+                  {/* Product Image */}
+                  {item.image && (
+                    <div className="h-32 mb-3 flex items-center justify-center bg-zinc-800 rounded-lg">
+                      <img src={item.image} alt="" className="max-h-28 max-w-full object-contain" />
+                    </div>
+                  )}
+                  
+                  {/* Title */}
+                  <h3 className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-[#22c55e]">
+                    {item.title}
+                  </h3>
+                  
+                  {/* Price & Rating */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#22c55e] font-bold text-lg">{item.price}</span>
+                    {item.rating && (
+                      <div className="flex items-center gap-1 text-zinc-400">
+                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                        <span className="text-sm">{item.rating.toFixed(1)}</span>
+                        {item.reviews && (
+                          <span className="text-xs">({item.reviews.toLocaleString()})</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </a>
               ))}
             </div>
           </div>
         ) : query ? (
           <div className="text-center py-12 bg-zinc-900 rounded-xl">
             <Package className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400">No results found. Try a different search term.</p>
+            <p className="text-zinc-400">No results found. Try "robot", "case", or "holder"</p>
           </div>
         ) : (
           <div className="text-center py-12">
             <Search className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
             <p className="text-zinc-400">Enter a search term to find 3D printed products</p>
+            <p className="text-zinc-500 text-sm mt-2">Try: robot, case, holder, phone, drone, art, jewelry</p>
           </div>
         )}
       </main>
