@@ -23,10 +23,10 @@ const PLATFORMS = [
   { id: "all", name: "All Platforms" },
   { id: "thingiverse", name: "Thingiverse", color: "bg-green-600" },
   { id: "printables", name: "Printables", color: "bg-orange-600" },
+  { id: "stlfinder", name: "STL Finder", color: "bg-purple-600" },
+  { id: "yeggi", name: "Yeggi", color: "bg-pink-600" },
   { id: "etsy", name: "Etsy", color: "bg-yellow-500" },
   { id: "ebay", name: "eBay", color: "bg-blue-500" },
-  { id: "facebook", name: "Facebook", color: "bg-blue-600" },
-  { id: "shopify", name: "Shopify", color: "bg-green-500" },
   { id: "amazon", name: "Amazon", color: "bg-orange-500" },
 ];
 

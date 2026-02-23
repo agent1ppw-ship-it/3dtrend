@@ -5,7 +5,6 @@ interface ProductResult {
   price: string;
   url: string;
   platform: string;
-  category?: string;
   image?: string;
 }
 
@@ -16,234 +15,159 @@ function is3DPrintRelated(title: string): boolean {
   return PRINT_KEYWORDS.some(keyword => lowerTitle.includes(keyword));
 }
 
-// Facebook Marketplace
-async function searchFacebookMarketplace(query: string): Promise<ProductResult[]> {
+// Thingiverse - try to parse their page
+async function searchThingiverse(query: string): Promise<ProductResult[]> {
   try {
-    const url = `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(query)}%203d%20printed`;
+    const url = `https://www.thingiverse.com/search/type:things/sort:relevant/page:1/q:${query}`;
     const res = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        "Accept": "text/html",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    
-    const html = await res.text();
-    if (html.length < 1000) return [];
-    
-    const results: ProductResult[] = [];
-    
-    // Facebook renders content dynamically - look for JSON data in script tags
-    const scriptPattern = /"marketplace_search_feed":\s*({[\s\S]*?})\s*[,\n]/g;
-    let match;
-    
-    while ((match = scriptPattern.exec(html)) !== null) {
-      try {
-        const data = JSON.parse(match[1]);
-        const items = data?.edges || data?.results || [];
-        
-        for (const item of items.slice(0, 10)) {
-          const node = item?.node || item;
-          const title = node?.listing?.title || node?.title || "";
-          const price = node?.listing?.price?.amount || node?.price || "";
-          
-          if (title && is3DPrintRelated(title)) {
-            results.push({
-              title,
-              price: price ? `$${parseFloat(price).toFixed(2)}` : "Contact for price",
-              url: node?.listing?.url || `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(title)}`,
-              platform: "facebook",
-              image: node?.listing?.image?.url || node?.image,
-            });
-          }
-        }
-      } catch {}
-      if (results.length >= 10) break;
-    }
-    
-    // Alternative: look for any product data
-    if (results.length === 0) {
-      const jsonPattern = /"text":\s*"([^"]{10,100}3d[^"]{0,50})"/g;
-      while ((match = jsonPattern.exec(html)) !== null) {
-        const title = match[1].replace(/\\u0026/g, "&");
-        if (title.length > 15 && is3DPrintRelated(title)) {
-          results.push({
-            title,
-            price: "Contact for price",
-            url: `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(title)}`,
-            platform: "facebook",
-          });
-        }
-        if (results.length >= 10) break;
-      }
-    }
-    
-    return results;
-  } catch (e) {
-    console.log("Facebook error:", e);
-    return [];
-  }
-}
-
-// Shopify stores (general search via Google cached results)
-async function searchShopify(query: string): Promise<ProductResult[]> {
-  try {
-    // Use Google custom search to find Shopify stores
-    const url = `https://www.google.com/search?q=${encodeURIComponent(query + " 3d printed site:shopify.com")}&num=20`;
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml",
       },
       signal: AbortSignal.timeout(10000),
     });
     
     const html = await res.text();
-    if (html.length < 500) return [];
+    if (html.length < 2000) return [];
     
     const results: ProductResult[] = [];
     
-    // Extract Shopify store URLs
-    const urlPattern = /https:\/\/[^/]*\.myshopify\.com[^\s"<>]*/g;
-    let match;
-    const shopifyUrls = new Set<string>();
+    // Look for thing data in multiple formats
+    const patterns = [
+      /"name":"([^"]+)"/g,
+      /<img[^>]*alt="([^"]*robot[^"]*)"[^>]*>/gi,
+      /data-name="([^"]+)"/g,
+    ];
     
-    while ((match = urlPattern.exec(html)) !== null) {
-      const storeUrl = match[0].split("?")[0];
-      if (!shopifyUrls.has(storeUrl) && shopifyUrls.size < 5) {
-        shopifyUrls.add(storeUrl);
-      }
-    }
-    
-    // Visit each Shopify store and search
-    for (const storeUrl of shopifyUrls) {
-      try {
-        const storeRes = await fetch(storeUrl + "/search?q=3d+printed", {
-          headers: { "User-Agent": "Mozilla/5.0" },
-          signal: AbortSignal.timeout(5000),
-        });
-        
-        const storeHtml = await storeRes.text();
-        
-        // Extract product titles
-        const titlePattern = /"title":\s*"([^"]{10,80})"/g;
-        let titleMatch;
-        
-        while ((titleMatch = titlePattern.exec(storeHtml)) !== null) {
-          const title = titleMatch[1].replace(/\\u0026/g, "&");
-          if (is3DPrintRelated(title)) {
-            results.push({
-              title,
-              price: "Visit store",
-              url: storeUrl + "/search?q=3d+printed",
-              platform: "shopify",
-              image: undefined,
-            });
-          }
-          if (results.length >= 15) break;
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null) {
+        const title = match[1].replace(/\\u0026/g, "&").slice(0, 100);
+        if (title && title.length > 5) {
+          results.push({
+            title,
+            price: "Free",
+            url: `https://www.thingiverse.com/search?q=${query}`,
+            platform: "thingiverse",
+          });
         }
-        
         if (results.length >= 15) break;
-      } catch {}
-    }
-    
-    return results;
-  } catch (e) {
-    console.log("Shopify search error:", e);
-    return [];
-  }
-}
-
-// Thingiverse (popular 3D print files)
-async function searchThingiverse(query: string): Promise<ProductResult[]> {
-  try {
-    const url = `https://www.thingiverse.com/search?type=items&sort=relevant&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
-    });
-    
-    const html = await res.text();
-    if (html.length < 500) return [];
-    
-    const results: ProductResult[] = [];
-    
-    // Thingiverse JSON data
-    const dataPattern = /window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});/;
-    const dataMatch = html.match(dataPattern);
-    
-    if (dataMatch) {
-      try {
-        const data = JSON.parse(dataMatch[1]);
-        const items = data?.searchResults?.hits?.hits || [];
-        
-        for (const item of items.slice(0, 15)) {
-          const title = item?._source?.name || item?.name || "";
-          if (title && is3DPrintRelated(title)) {
-            results.push({
-              title,
-              price: "Free (download)",
-              url: item?._source?.public_url || item?.url || "",
-              platform: "thingiverse",
-              image: item?._source?.thumbnail || item?.thumbnail,
-            });
-          }
-        }
-      } catch {}
-    }
-    
-    return results;
-  } catch {
-    return [];
-  }
-}
-
-// Printables (Prusa's 3D print site)
-async function searchPrintables(query: string): Promise<ProductResult[]> {
-  try {
-    const url = `https://www.printables.com/search/models?keyword=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
-    });
-    
-    const html = await res.text();
-    if (html.length < 500) return [];
-    
-    const results: ProductResult[] = [];
-    
-    // Extract JSON data
-    const jsonPattern = /"name":\s*"([^"]{5,80})"[^}]*?"url":\s*"([^"]+)"/g;
-    let match;
-    
-    while ((match = jsonPattern.exec(html)) !== null) {
-      const title = match[1];
-      const url = "https://www.printables.com" + match[2];
-      
-      if (title && is3DPrintRelated(title)) {
-        results.push({
-          title,
-          price: "Free (download)",
-          url,
-          platform: "printables",
-        });
       }
       if (results.length >= 15) break;
     }
     
+    return results.slice(0, 15);
+  } catch (e) {
+    console.log("Thingiverse error:", e);
+    return [];
+  }
+}
+
+// Printables - try their old API endpoint
+async function searchPrintables(query: string): Promise<ProductResult[]> {
+  try {
+    // Try the old Printables API endpoint that sometimes works
+    const url = `https://www.printables.com/api/front/prints/search/`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        keyword: query,
+        page: 1,
+        per_page: 20,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    
+    const data = await res.json();
+    
+    if (data?.results) {
+      return data.results.slice(0, 15).map((p: any) => ({
+        title: p.name || p.title || "Unknown",
+        price: p.price ? `$${p.price}` : "Free",
+        url: p.url || `https://www.printables.com/print/${p.id}`,
+        platform: "printables",
+        image: p.thumbnail || p.image,
+      }));
+    }
+    return [];
+  } catch (e) {
+    console.log("Printables error:", e);
+    return [];
+  }
+}
+
+// STL Finder - aggregates 3D print files
+async function searchSTLFinder(query: string): Promise<ProductResult[]> {
+  try {
+    const url = `https://www.stlfinder.com/api/v1/search/?query=${encodeURIComponent(query + " 3d printed")}&limit=20`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(10000),
+    });
+    
+    const data = await res.json();
+    
+    if (data?.models) {
+      return data.models.slice(0, 15).map((m: any) => ({
+        title: m.name || m.title,
+        price: "Free / varies",
+        url: m.url || m.view_url,
+        platform: "stlfinder",
+        image: m.thumb,
+      }));
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+// Yeggi - 3D print search engine
+async function searchYeggi(query: string): Promise<ProductResult[]> {
+  try {
+    const url = `https://www.yeggi.com/q/${encodeURIComponent(query)}/`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    
+    const html = await res.text();
+    if (html.length < 2000) return [];
+    
+    const results: ProductResult[] = [];
+    const titlePattern = /"name":\s*"([^"]{10,80})"/g;
+    let match;
+    
+    while ((match = titlePattern.exec(html)) !== null) {
+      const title = match[1];
+      if (title.toLowerCase().includes("3d") || title.toLowerCase().includes("print")) {
+        results.push({
+          title,
+          price: "Varies",
+          url: `https://www.yeggi.com/q/${encodeURIComponent(query)}/`,
+          platform: "yeggi",
+        });
+      }
+      if (results.length >= 10) break;
+    }
     return results;
   } catch {
     return [];
   }
 }
 
-// eBay (existing)
+// eBay
 async function searchEbay(query: string): Promise<ProductResult[]> {
   try {
     const searchQuery = `3d printed ${query}`;
     const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`;
     
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
       signal: AbortSignal.timeout(8000),
     });
     
@@ -272,14 +196,14 @@ async function searchEbay(query: string): Promise<ProductResult[]> {
   }
 }
 
-// Etsy (existing)
+// Etsy
 async function searchEtsy(query: string): Promise<ProductResult[]> {
   try {
     const searchQuery = `3d printed ${query}`;
     const url = `https://www.etsy.com/search?q=${encodeURIComponent(searchQuery)}`;
     
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
       signal: AbortSignal.timeout(8000),
     });
     
@@ -308,15 +232,13 @@ async function searchEtsy(query: string): Promise<ProductResult[]> {
   }
 }
 
-// Keepa API for Amazon
+// Keepa (Amazon)
 async function searchKeepa(query: string): Promise<ProductResult[]> {
   const apiKey = process.env.KEEPA_API_KEY;
   if (!apiKey) return [];
   
   try {
-    const searchQuery = `${query} 3d printed`;
-    const url = `https://api.keepa.com/search?domain=1&search=${encodeURIComponent(searchQuery)}&items=20&key=${apiKey}`;
-    
+    const url = `https://api.keepa.com/search?domain=1&search=${encodeURIComponent(query + " 3d printed")}&items=20&key=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
     const data = await res.json();
     
@@ -325,7 +247,7 @@ async function searchKeepa(query: string): Promise<ProductResult[]> {
         .filter((p: any) => p.title && is3DPrintRelated(p.title))
         .slice(0, 15)
         .map((p: any) => ({
-          title: p.title || "Unknown",
+          title: p.title,
           price: p.price ? `$${(p.price / 100).toFixed(2)}` : "Check Price",
           url: `https://www.amazon.com/dp/${p.asin}`,
           platform: "amazon",
@@ -347,41 +269,43 @@ export async function GET(request: NextRequest) {
   }
   
   const allResults: ProductResult[] = [];
+  const errors: string[] = [];
   
-  // Determine which platforms to search
+  // Determine platforms to search
   const platforms = platform === "all" 
-    ? ["thingiverse", "printables", "etsy", "ebay", "facebook", "shopify", "amazon"]
+    ? ["thingiverse", "printables", "stlfinder", "yeggi", "etsy", "ebay", "amazon"]
     : [platform];
   
-  const promises = [];
+  const searchFunctions: Record<string, () => Promise<ProductResult[]>> = {
+    thingiverse: () => searchThingiverse(query),
+    printables: () => searchPrintables(query),
+    stlfinder: () => searchSTLFinder(query),
+    yeggi: () => searchYeggi(query),
+    etsy: () => searchEtsy(query),
+    ebay: () => searchEbay(query),
+    amazon: () => searchKeepa(query),
+  };
   
-  if (platforms.includes("amazon")) {
-    promises.push(searchKeepa(query));
-  }
-  if (platforms.includes("ebay")) {
-    promises.push(searchEbay(query));
-  }
-  if (platforms.includes("etsy")) {
-    promises.push(searchEtsy(query));
-  }
-  if (platforms.includes("facebook")) {
-    promises.push(searchFacebookMarketplace(query));
-  }
-  if (platforms.includes("shopify")) {
-    promises.push(searchShopify(query));
-  }
-  if (platforms.includes("thingiverse")) {
-    promises.push(searchThingiverse(query));
-  }
-  if (platforms.includes("printables")) {
-    promises.push(searchPrintables(query));
-  }
+  // Search all platforms in parallel
+  const promises = platforms
+    .filter(p => searchFunctions[p])
+    .map(async (p) => {
+      try {
+        const results = await searchFunctions[p]();
+        return { platform: p, results };
+      } catch (e) {
+        return { platform: p, results: [], error: String(e) };
+      }
+    });
   
   const results = await Promise.allSettled(promises);
   
   for (const result of results) {
     if (result.status === "fulfilled") {
-      allResults.push(...result.value);
+      allResults.push(...result.value.results);
+      if (result.value.error) {
+        errors.push(`${result.value.platform}: ${result.value.error}`);
+      }
     }
   }
   
@@ -397,6 +321,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ 
     results: uniqueResults.slice(0, 50),
     count: uniqueResults.length,
-    platforms: platforms,
+    hasAmazonKey: !!process.env.KEEPA_API_KEY,
+    errors: errors.length > 0 ? errors : undefined,
   });
 }
