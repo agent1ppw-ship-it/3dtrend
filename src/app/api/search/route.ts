@@ -137,7 +137,6 @@ function getProductsForQuery(query: string): ProductResult[] {
   // Helper: check if product is relevant to query
   const isRelevant = (title: string): boolean => {
     const titleLower = title.toLowerCase();
-    // Must contain query keyword OR be in matched category
     return words.some(w => w.length > 2 && titleLower.includes(w));
   };
   
@@ -146,7 +145,7 @@ function getProductsForQuery(query: string): ProductResult[] {
     results = [...SAMPLE_DATABASE[q]];
   }
   
-  // Then try matching individual words (limit to prevent too many)
+  // Then try matching individual words
   if (results.length < 5) {
     for (const word of words) {
       if (SAMPLE_DATABASE[word] && results.length < 20) {
@@ -156,7 +155,7 @@ function getProductsForQuery(query: string): ProductResult[] {
     }
   }
   
-  // Try partial matches (only if still no results)
+  // Try partial matches
   if (results.length < 3) {
     for (const key of Object.keys(SAMPLE_DATABASE)) {
       if (q.includes(key) || key.includes(q)) {
@@ -169,58 +168,106 @@ function getProductsForQuery(query: string): ProductResult[] {
     }
   }
   
-  // If still not enough, generate dynamic products (ALWAYS relevant to query)
-  if (results.length < 5) {
-    const dynamicProducts = generateDynamicProducts(q);
-    results = [...results, ...dynamicProducts];
-  }
+  // RANDOMLY generate related products (more variety)
+  const randomProducts = generateRandomProducts(q, words);
+  results = [...results, ...randomProducts];
   
-  // Only add default 3D printing supplies if query is related to 3D printing
+  // Only add default if 3D printing related
   const is3DPrintingQuery = q.includes("3d") || q.includes("printer") || q.includes("filament") || q.includes("print");
-  if (results.length < 10 && is3DPrintingQuery) {
-    results = [...results, ...DEFAULT_PRODUCTS.slice(0, 10)];
+  if (is3DPrintingQuery && results.length < 15) {
+    results = [...results, ...DEFAULT_PRODUCTS.slice(0, 8)];
   }
   
-  // Final filter: ensure all results contain query keyword or are very relevant
-  const finalResults = results.filter((p, idx, arr) => {
-    // Keep first batch of results that are definitely relevant
-    if (idx < 20) return true;
-    // For remaining, be more lenient but still require some relevance
-    return isRelevant(p.title) || p.title.toLowerCase().includes("3d printed");
+  // Shuffle results for variety
+  results = shuffleArray(results);
+  
+  // Final filter - keep all but ensure variety
+  const finalResults = results.filter((p, idx) => {
+    // Keep everything that's relevant
+    if (isRelevant(p.title)) return true;
+    // Keep some variety from other categories
+    if (p.title.toLowerCase().includes("3d printed")) return idx < 35;
+    return false;
   }).slice(0, 40);
   
   return finalResults;
 }
 
-// Generate highly relevant products based on search query
-function generateDynamicProducts(query: string): ProductResult[] {
-  // Template products that work with any query
-  const baseTemplates = [
-    { suffix: "Custom Design", basePrice: 35 },
-    { suffix: "Personalized Kit", basePrice: 45 },
-    { suffix: "DIY Parts Set", basePrice: 25 },
-    { suffix: "Replacement Components", basePrice: 18 },
-    { suffix: "Accessory Pack", basePrice: 22 },
-    { suffix: "Professional Set", basePrice: 55 },
-    { suffix: "Beginner Bundle", basePrice: 28 },
-    { suffix: "Advanced Kit", basePrice: 65 },
-    { suffix: "Starter Pack", basePrice: 24 },
-    { suffix: "Premium Package", basePrice: 75 },
+// Shuffle array for random results
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Generate random related products with variety
+function generateRandomProducts(query: string, words: string[]): ProductResult[] {
+  const categories = [
+    { suffix: "Kit - DIY Assembly", priceRange: [25, 89], reviewsRange: [300, 2000] },
+    { suffix: "Custom Design - Personalized", priceRange: [19, 59], reviewsRange: [500, 3000] },
+    { suffix: "Replacement Parts - Professional", priceRange: [12, 35], reviewsRange: [200, 1500] },
+    { suffix: "Accessory Set - Complete", priceRange: [15, 45], reviewsRange: [400, 2500] },
+    { suffix: "Premium Bundle - Gift Box", priceRange: [35, 99], reviewsRange: [100, 800] },
+    { suffix: "Starter Pack - Beginner Friendly", priceRange: [18, 38], reviewsRange: [800, 4000] },
+    { suffix: "Advanced Module - Expert", priceRange: [45, 120], reviewsRange: [150, 600] },
+    { suffix: "Miniature - Collectible", priceRange: [12, 28], reviewsRange: [600, 3500] },
+    { suffix: "Functional Prototype - Engineering", priceRange: [30, 75], reviewsRange: [200, 1200] },
+    { suffix: "Artisan Craft - Handmade Style", priceRange: [22, 55], reviewsRange: [350, 1800] },
+    { suffix: "Gaming Accessory - RGB LED", priceRange: [16, 42], reviewsRange: [500, 2800] },
+    { suffix: "Home Decor - Modern Style", priceRange: [20, 48], reviewsRange: [400, 2200] },
+    { suffix: "Wearable - Everyday Use", priceRange: [14, 36], reviewsRange: [600, 3200] },
+    { suffix: "Educational - STEM Learning", priceRange: [24, 65], reviewsRange: [350, 1600] },
+    { suffix: "Robot Part - Compatible Model", priceRange: [18, 45], reviewsRange: [280, 1400] },
   ];
   
-  const q = query.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const materials = ["PLA", "PETG", "ABS", "Resin", "TPU", "Nylon"];
+  const colors = ["Matte Black", "White", "Neon Green", "Carbon Fiber", "Metallic Silver", "Transparent", "Glow in Dark"];
   
-  return baseTemplates.map((p) => {
-    const suffix = p.suffix.toLowerCase().replace(/ /g, "+");
-    return {
-      title: `3D Printed ${query.charAt(0).toUpperCase() + query.slice(1)} ${p.suffix}`,
-      price: `$${p.basePrice}.99`,
-      url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${suffix}`,
+  const q = query.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const queryCapitalized = query.charAt(0).toUpperCase() + query.slice(1);
+  
+  // Generate 25 random products
+  const randomResults: ProductResult[] = [];
+  
+  for (let i = 0; i < 25; i++) {
+    const cat = categories[Math.floor(Math.random() * categories.length)];
+    const mat = materials[Math.floor(Math.random() * materials.length)];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const price = Math.floor(Math.random() * (cat.priceRange[1] - cat.priceRange[0]) + cat.priceRange[0]);
+    const reviews = Math.floor(Math.random() * (cat.reviewsRange[1] - cat.reviewsRange[0]) + cat.reviewsRange[0]);
+    
+    // Randomly choose format
+    const format = Math.floor(Math.random() * 4);
+    let title: string;
+    
+    switch (format) {
+      case 0:
+        title = `3D Printed ${queryCapitalized} ${cat.suffix}`;
+        break;
+      case 1:
+        title = `${queryCapitalized} 3D Printed - ${mat} ${color}`;
+        break;
+      case 2:
+        title = `Custom ${queryCapitalized} - 3D Printed ${color} ${mat}`;
+        break;
+      default:
+        title = `3D Printed ${mat} ${queryCapitalized} ${cat.suffix}`;
+    }
+    
+    randomResults.push({
+      title,
+      price: `$${price}.99`,
+      url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${encodeURIComponent(cat.suffix.split(" ")[0].toLowerCase())}`,
       platform: "amazon",
-      rating: 4.2 + Math.random() * 0.6,
-      reviews: Math.floor(500 + Math.random() * 2000),
-    };
-  });
+      rating: Math.round((4.0 + Math.random() * 0.8) * 10) / 10,
+      reviews,
+    });
+  }
+  
+  return randomResults;
 }
 
 // Keepa API for real Amazon data
