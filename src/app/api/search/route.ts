@@ -151,12 +151,44 @@ const SAMPLE_DATABASE: Record<string, ProductResult[]> = {
   ],
 };
 
+// Generate free STL files for any search query
+function generateSTLFiles(query: string): ProductResult[] {
+  const q = query.toLowerCase().trim();
+  const queryCapitalized = query.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  
+  // Generic STL ideas that work with any query
+  const stlTemplates = [
+    { title: `${queryCapitalized} Design - Free STL`, platform: "thingiverse" },
+    { title: `${queryCapitalized} Model - STL File`, platform: "thingiverse" },
+    { title: `${queryCapitalized} 3D Model - Free Download`, platform: "thingiverse" },
+    { title: `DIY ${queryCapitalized} - Print File`, platform: "thingiverse" },
+    { title: `${queryCapitalized} Prototype - STL`, platform: "thingiverse" },
+    { title: `${queryCapitalized} - Prusa Print File`, platform: "printables" },
+    { title: `Custom ${queryCapitalized} - Free STL`, platform: "printables" },
+    { title: `${queryCapitalized} CAD Design - Download`, platform: "printables" },
+  ];
+  
+  return stlTemplates.map((item) => ({
+    title: item.title,
+    price: "Free",
+    url: item.platform === "thingiverse"
+      ? `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(query)}`
+      : `https://www.printables.com/search/models?keyword=${encodeURIComponent(query)}`,
+    platform: item.platform,
+    rating: 4.5,
+    reviews: Math.floor(Math.random() * 10000) + 1000,
+  }));
+}
+
 function getProductsForQuery(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
   let results: ProductResult[] = [];
+  let printFiles: ProductResult[] = [];
   
-  // Exact match
-  if (SAMPLE_DATABASE[q]) results = [...SAMPLE_DATABASE[q]];
+  // Get matching category products
+  if (SAMPLE_DATABASE[q]) {
+    results = [...SAMPLE_DATABASE[q]];
+  }
   
   // Partial match
   if (results.length < 4) {
@@ -167,6 +199,19 @@ function getProductsForQuery(query: string): ProductResult[] {
       if (results.length >= 15) break;
     }
   }
+  
+  // Separate Thingiverse/Printables from other platforms
+  const stlFiles = results.filter(r => r.platform === "thingiverse" || r.platform === "printables");
+  const otherProducts = results.filter(r => r.platform !== "thingiverse" && r.platform !== "printables");
+  
+  // If less than 5 STL files, generate more
+  if (stlFiles.length < 5) {
+    const generatedSTLs = generateSTLFiles(query);
+    printFiles = generatedSTLs.slice(0, 5 - stlFiles.length);
+  }
+  
+  // Combine: STL files first, then other products
+  results = [...printFiles, ...stlFiles, ...otherProducts];
   
   // Shuffle
   for (let i = results.length - 1; i > 0; i--) {
