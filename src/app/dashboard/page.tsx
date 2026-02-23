@@ -13,6 +13,7 @@ interface SearchResult {
   image?: string;
   rating?: number;
   reviews?: number;
+  type?: "product" | "printable";
 }
 
 const PLATFORMS = [
@@ -30,6 +31,7 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [printableIdeas, setPrintableIdeas] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState(query);
   const [platform, setPlatform] = useState("all");
@@ -46,9 +48,11 @@ function DashboardContent() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&platform=${platform}`);
       const data = await res.json();
       setResults(data.results || []);
+      setPrintableIdeas(data.printableIdeas || []);
     } catch (error) {
       console.error("Search error:", error);
       setResults([]);
+      setPrintableIdeas([]);
     } finally {
       setLoading(false);
     }
@@ -145,54 +149,89 @@ function DashboardContent() {
             <div className="w-8 h-8 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-zinc-400">Searching across marketplaces...</p>
           </div>
-        ) : results.length > 0 ? (
+        ) : results.length > 0 || printableIdeas.length > 0 ? (
           <div>
-            <p className="text-zinc-400 mb-4">{results.length} results found</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {results.map((item, i) => (
-                <a
-                  key={i}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block bg-zinc-900 rounded-xl border border-zinc-800 hover:border-[#22c55e] transition p-4 group"
-                >
-                  {/* Platform Badge */}
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPlatformColor(item.platform)} text-white`}>
-                      {getPlatformName(item.platform)}
-                    </span>
-                    <ExternalLink className="w-4 h-4 text-zinc-600 group-hover:text-[#22c55e]" />
-                  </div>
-                  
-                  {/* Product Image */}
-                  {item.image && (
-                    <div className="h-32 mb-3 flex items-center justify-center bg-zinc-800 rounded-lg">
-                      <img src={item.image} alt="" className="max-h-28 max-w-full object-contain" />
-                    </div>
-                  )}
-                  
-                  {/* Title */}
-                  <h3 className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-[#22c55e]">
-                    {item.title}
-                  </h3>
-                  
-                  {/* Price & Rating */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#22c55e] font-bold text-lg">{item.price}</span>
-                    {item.rating && (
-                      <div className="flex items-center gap-1 text-zinc-400">
-                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                        <span className="text-sm">{item.rating.toFixed(1)}</span>
-                        {item.reviews && (
-                          <span className="text-xs">({item.reviews.toLocaleString()})</span>
+            {/* Printable Ideas Section */}
+            {printableIdeas.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">🖨️</span>
+                  <h3 className="text-xl font-bold text-white">Things You Can 3D Print</h3>
+                </div>
+                <p className="text-zinc-400 text-sm mb-4">Creative ideas for things to print related to "{query}"</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {printableIdeas.map((item, i) => (
+                    <a
+                      key={`print-${i}`}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-800 rounded-lg p-3 hover:border-green-500 transition group"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-green-400 text-lg">🖨️</span>
+                        <span className="text-green-400 text-xs font-medium">PRINTABLE</span>
+                      </div>
+                      <h3 className="text-white font-medium text-sm group-hover:text-green-400 transition line-clamp-2">
+                        {item.title}
+                      </h3>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Products Section */}
+            {results.length > 0 && (
+              <div>
+                <p className="text-zinc-400 mb-4">{results.length} products found</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {results.map((item, i) => (
+                    <a
+                      key={i}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-zinc-900 rounded-xl border border-zinc-800 hover:border-[#22c55e] transition p-4 group"
+                    >
+                      {/* Platform Badge */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPlatformColor(item.platform)} text-white`}>
+                          {getPlatformName(item.platform)}
+                        </span>
+                        <ExternalLink className="w-4 h-4 text-zinc-600 group-hover:text-[#22c55e]" />
+                      </div>
+                      
+                      {/* Product Image */}
+                      {item.image && (
+                        <div className="h-32 mb-3 flex items-center justify-center bg-zinc-800 rounded-lg">
+                          <img src={item.image} alt="" className="max-h-28 max-w-full object-contain" />
+                        </div>
+                      )}
+                      
+                      {/* Title */}
+                      <h3 className="text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-[#22c55e]">
+                        {item.title}
+                      </h3>
+                      
+                      {/* Price & Rating */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#22c55e] font-bold text-lg">{item.price}</span>
+                        {item.rating && (
+                          <div className="flex items-center gap-1 text-zinc-400">
+                            <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                            <span className="text-sm">{item.rating.toFixed(1)}</span>
+                            {item.reviews && (
+                              <span className="text-xs">({item.reviews.toLocaleString()})</span>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </a>
-              ))}
-            </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : query ? (
           <div className="text-center py-12 bg-zinc-900 rounded-xl">

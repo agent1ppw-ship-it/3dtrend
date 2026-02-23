@@ -8,6 +8,44 @@ interface ProductResult {
   image?: string;
   rating?: number;
   reviews?: number;
+  type?: "product" | "printable";
+}
+
+// 3D printable ideas - things users can print themselves
+function generatePrintableIdeas(query: string): ProductResult[] {
+  const q = query.toLowerCase().trim();
+  
+  const printableTemplates: Record<string, string[]> = {
+    robot: ["Bipedal Walking Robot", "Articulated Robot Hand", "Robot Gripper Claw", "Hexapod Spider Body", "Robot Head Case", "Motor Mount", "Robot Wheel", "Antenna Mount"],
+    case: ["Phone Case Model", "Tablet Stand", "Electronics Enclosure", "Battery Compartment", "Controller Grip", "Sensor Housing", "Project Box", "Mount Plate"],
+    holder: ["Pen Cup", "Tool Hook", "Cable Clip", "Phone Car Mount", "Headphone Stand", "Knife Holder", "Shelf Bracket", "Bottle Holder"],
+    phone: ["Kickstand Design", "Magnetic Mount", "Ring Holder", "Wireless Charger", "Phone Dock"],
+    drone: ["Landing Gear", "Propeller Guard", "Camera Gimbal", "Arm Bracket", "Battery Tray"],
+    art: ["Geometric Vase", "Parametric Design", "Figurine Bust", "Wall Panel", "Lamp Shade"],
+    jewelry: ["Ring Design", "Pendant Template", "Earrings", "Bracelet Link"],
+    toy: ["Fidget Spinner", "Marble Run", "Building Brick", "Puzzle Piece"],
+    home: ["Cabinet Handle", "Drawer Knob", "Shelf Bracket", "Switch Cover", "Coaster", "Plant Pot"],
+    gaming: ["Controller Button", "Joystick Cap", "Headset Hanger", "Cable Guide"],
+  };
+  
+  let templates = printableTemplates.default || ["Snap-fit Joint", "Hinge", "Bearing Mount", "Gear Wheel", "Pulley", "Motor Bracket", "Sensor Mount", "Custom Enclosure"];
+  
+  for (const key of Object.keys(printableTemplates)) {
+    if (q.includes(key) || key.includes(q)) {
+      templates = printableTemplates[key];
+      break;
+    }
+  }
+  
+  return templates.slice(0, 8).map((idea: string) => ({
+    title: idea,
+    price: "🖨️ Printable",
+    url: `https://www.thingiverse.com/search?type=things&q=${encodeURIComponent(idea + " " + query)}`,
+    platform: "printable",
+    type: "printable",
+    rating: undefined,
+    reviews: undefined,
+  }));
 }
 
 // Extended sample products database - 50+ items per category
@@ -324,6 +362,9 @@ export async function GET(request: NextRequest) {
     allResults.push(...sampleProducts);
   }
   
+  // Generate printable ideas for users
+  const printableIdeas = generatePrintableIdeas(query);
+  
   // Deduplicate
   const seen = new Set<string>();
   const uniqueResults = allResults.filter(item => {
@@ -335,6 +376,7 @@ export async function GET(request: NextRequest) {
   
   return NextResponse.json({ 
     results: uniqueResults.slice(0, 48),
+    printableIdeas: printableIdeas,
     count: uniqueResults.length,
     query,
   });
