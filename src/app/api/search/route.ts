@@ -375,7 +375,36 @@ function generateRandomProducts(query: string, words: string[]): ProductResult[]
   return randomResults;
 }
 
-// Keepa API for real Amazon data
+// SerpAPI for real Amazon/Google Shopping results
+async function searchSerpAPI(searchQuery: string): Promise<ProductResult[]> {
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) return [];
+  
+  try {
+    // Search Google Shopping for 3D printed items
+    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(searchQuery)}&engine=google_shopping&api_key=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const data = await res.json();
+    
+    if (data.shopping_results) {
+      return data.shopping_results.slice(0, 15).map((item: any) => ({
+        title: item.title || "Unknown Product",
+        price: item.price || item.extracted_price ? `$${item.extracted_price || item.price}` : "Check Price",
+        url: item.link || item.product_link || "",
+        platform: item.source === "Amazon" ? "amazon" : (item.source?.toLowerCase() || "shopping"),
+        image: item.thumbnail || item.image,
+        rating: item.rating,
+        reviews: item.reviews,
+      }));
+    }
+    return [];
+  } catch (e) {
+    console.log("SerpAPI error:", e);
+    return [];
+  }
+}
+
+// Keepa API for real Amazon data (fallback)
 async function searchKeepa(searchQuery: string): Promise<ProductResult[]> {
   const apiKey = process.env.KEEPA_API_KEY;
   if (!apiKey) return [];
@@ -410,14 +439,22 @@ export async function GET(request: NextRequest) {
   
   const allResults: ProductResult[] = [];
   
-  // Try Keepa first for real data
-  const keepaResults = await searchKeepa(query + " 3d printed");
-  if (keepaResults.length > 0) {
-    allResults.push(...keepaResults);
+  // Try SerpAPI first for real data
+  const serpResults = await searchSerpAPI(query + " 3d printed");
+  if (serpResults.length > 0) {
+    allResults.push(...serpResults);
   }
   
-  // If no real data, use sample products
-  if (allResults.length < 5) {
+  // Try Keepa as fallback
+  if (allResults.length < 3) {
+    const keepaResults = await searchKeepa(query + " 3d printed");
+    if (keepaResults.length > 0) {
+      allResults.push(...keepaResults);
+    }
+  }
+  
+  // If no real data from APIs, use sample products
+  if (allResults.length < 3) {
     const sampleProducts = getProductsForQuery(query);
     allResults.push(...sampleProducts);
   }
@@ -439,5 +476,6 @@ export async function GET(request: NextRequest) {
     printableIdeas: printableIdeas,
     count: uniqueResults.length,
     query,
+    hasRealData: serpResults.length > 0 || allResults.length > 10,
   });
 }
