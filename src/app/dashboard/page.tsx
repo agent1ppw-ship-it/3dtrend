@@ -99,7 +99,8 @@ function DashboardContent() {
           </div>
           <nav className="flex items-center gap-6">
             <Link href="/" className="text-zinc-400 hover:text-white transition">Home</Link>
-            <Link href="/categories" className="text-zinc-400 hover:text-white transition">Categories</Link>
+            <Link href="/dashboard" className="text-zinc-400 hover:text-white transition">Search</Link>
+            <Link href="/trending" className="text-zinc-400 hover:text-white transition">Trending</Link>
             <Link href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</Link>
           </nav>
         </div>
