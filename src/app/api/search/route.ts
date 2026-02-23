@@ -212,67 +212,62 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Generate random related products with variety
+// Generate random related products with variety - RELEVANT to search term
 function generateRandomProducts(query: string, words: string[]): ProductResult[] {
-  const categories = [
-    { suffix: "Kit - DIY Assembly", priceRange: [25, 89], reviewsRange: [300, 2000] },
-    { suffix: "Custom Design - Personalized", priceRange: [19, 59], reviewsRange: [500, 3000] },
-    { suffix: "Replacement Parts - Professional", priceRange: [12, 35], reviewsRange: [200, 1500] },
-    { suffix: "Accessory Set - Complete", priceRange: [15, 45], reviewsRange: [400, 2500] },
-    { suffix: "Premium Bundle - Gift Box", priceRange: [35, 99], reviewsRange: [100, 800] },
-    { suffix: "Starter Pack - Beginner Friendly", priceRange: [18, 38], reviewsRange: [800, 4000] },
-    { suffix: "Advanced Module - Expert", priceRange: [45, 120], reviewsRange: [150, 600] },
-    { suffix: "Miniature - Collectible", priceRange: [12, 28], reviewsRange: [600, 3500] },
-    { suffix: "Functional Prototype - Engineering", priceRange: [30, 75], reviewsRange: [200, 1200] },
-    { suffix: "Artisan Craft - Handmade Style", priceRange: [22, 55], reviewsRange: [350, 1800] },
-    { suffix: "Gaming Accessory - RGB LED", priceRange: [16, 42], reviewsRange: [500, 2800] },
-    { suffix: "Home Decor - Modern Style", priceRange: [20, 48], reviewsRange: [400, 2200] },
-    { suffix: "Wearable - Everyday Use", priceRange: [14, 36], reviewsRange: [600, 3200] },
-    { suffix: "Educational - STEM Learning", priceRange: [24, 65], reviewsRange: [350, 1600] },
-    { suffix: "Robot Part - Compatible Model", priceRange: [18, 45], reviewsRange: [280, 1400] },
+  // Suffixes that work with ANY search term
+  const universalSuffixes = [
+    "Kit - DIY Assembly",
+    "Custom Design - Personalized",
+    "Replacement Parts - Professional",
+    "Accessory Set - Complete",
+    "Premium Bundle - Gift Box",
+    "Starter Pack - Beginner Friendly",
+    "Advanced Module - Expert",
+    "Miniature - Collectible",
+    "Functional Prototype - Engineering",
+    "Artisan Craft - Handmade Style",
+    "Professional Grade - High Quality",
+    "Complete Set - All-in-One",
   ];
   
+  // Materials and colors for variety
   const materials = ["PLA", "PETG", "ABS", "Resin", "TPU", "Nylon"];
   const colors = ["Matte Black", "White", "Neon Green", "Carbon Fiber", "Metallic Silver", "Transparent", "Glow in Dark"];
   
+  // Clean query for URL
   const q = query.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const queryCapitalized = query.charAt(0).toUpperCase() + query.slice(1);
+  // Capitalize properly
+  const queryCapitalized = query.split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   
-  // Generate 25 random products
+  // Generate products - ALWAYS include the search term
   const randomResults: ProductResult[] = [];
   
   for (let i = 0; i < 25; i++) {
-    const cat = categories[Math.floor(Math.random() * categories.length)];
+    const suffix = universalSuffixes[Math.floor(Math.random() * universalSuffixes.length)];
     const mat = materials[Math.floor(Math.random() * materials.length)];
     const color = colors[Math.floor(Math.random() * colors.length)];
-    const price = Math.floor(Math.random() * (cat.priceRange[1] - cat.priceRange[0]) + cat.priceRange[0]);
-    const reviews = Math.floor(Math.random() * (cat.reviewsRange[1] - cat.reviewsRange[0]) + cat.reviewsRange[0]);
+    const price = Math.floor(Math.random() * 50) + 15; // $15-$65
+    const reviews = Math.floor(Math.random() * 2000) + 300;
     
-    // Randomly choose format
-    const format = Math.floor(Math.random() * 4);
+    // ALWAYS put query term first in title to ensure relevance
+    const format = Math.floor(Math.random() * 3);
     let title: string;
     
     switch (format) {
       case 0:
-        title = `3D Printed ${queryCapitalized} ${cat.suffix}`;
+        title = `3D Printed ${queryCapitalized} ${suffix}`;
         break;
       case 1:
         title = `${queryCapitalized} 3D Printed - ${mat} ${color}`;
         break;
-      case 2:
-        title = `Custom ${queryCapitalized} - 3D Printed ${color} ${mat}`;
-        break;
       default:
-        title = `3D Printed ${mat} ${queryCapitalized} ${cat.suffix}`;
+        title = `Custom ${queryCapitalized} - 3D Printed ${color} ${mat}`;
     }
-    
-    // Use title as Amazon search query
-    const searchTerm = encodeURIComponent(title.replace(/[^a-zA-Z0-9\s]/g, " ").trim());
     
     randomResults.push({
       title,
       price: `$${price}.99`,
-      url: `https://www.amazon.com/s?k=${searchTerm}`,
+      url: titleToAmazonUrl(title),
       platform: "amazon",
       rating: Math.round((4.0 + Math.random() * 0.8) * 10) / 10,
       reviews,
