@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { TrendingUp, Flame, Star, Download, ExternalLink } from "lucide-react";
+import { TrendingUp, Flame, Star, Download } from "lucide-react";
 
 // Trending 3D printing data
 const TRENDING_DATA = {
@@ -39,16 +38,16 @@ export default function Home() {
       <header className="border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2">
+            <a href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
                 <span className="text-black font-bold text-lg">3</span>
               </div>
               <span className="font-bold text-xl">3DTrend</span>
-            </Link>
+            </a>
           </div>
           <nav className="flex items-center gap-6">
-            <Link href="/" className="text-[#22c55e] font-medium">Trending</Link>
-            <Link href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</Link>
+            <a href="/" className="text-[#22c55e] font-medium">Trending</a>
+            <a href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</a>
           </nav>
         </div>
       </header>
@@ -71,15 +70,17 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {TRENDING_DATA.categories.map((cat) => (
-              <Link
+              <a
                 key={cat.id}
-                href={`/dashboard?q=${cat.id}`}
+                href={`https://www.thingiverse.com/search?type=things&q=${cat.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-[#22c55e] transition group"
               >
                 <span className="text-3xl mb-2 block">{cat.icon}</span>
                 <h3 className="font-medium text-white group-hover:text-[#22c55e] transition">{cat.name}</h3>
                 <p className="text-zinc-500 text-sm">{cat.count.toLocaleString()} prints</p>
-              </Link>
+              </a>
             ))}
           </div>
         </section>
