@@ -1,35 +1,5 @@
-import { TrendingUp, Flame, Star, Download } from "lucide-react";
-
-// Trending 3D printing data
-const TRENDING_DATA = {
-  categories: [
-    { id: "robot", name: "Robotics & Automation", icon: "🤖", count: 12500 },
-    { id: "home", name: "Home Decor & Organization", icon: "🏠", count: 9800 },
-    { id: "gaming", name: "Gaming Accessories", icon: "🎮", count: 8400 },
-    { id: "wearables", name: "Wearables & Fashion", icon: "👕", count: 7200 },
-    { id: "toy", name: "Toys & Games", icon: "🎲", count: 6800 },
-    { id: "art", name: "Art & Sculptures", icon: "🎨", count: 5900 },
-    { id: "tool", name: "Tools & Gadgets", icon: "🔧", count: 5500 },
-    { id: "jewelry", name: "Jewelry & Accessories", icon: "💍", count: 4800 },
-  ],
-  popular: [
-    { title: "Bipedal Walking Robot", downloads: 45000, rating: 4.9, platform: "thingiverse" },
-    { title: "Phone Stand with Cable Management", downloads: 38000, rating: 4.8, platform: "thingiverse" },
-    { title: "Articulated Dragon", downloads: 32000, rating: 4.9, platform: "thingiverse" },
-    { title: "Parametric Vase", downloads: 28000, rating: 4.7, platform: "printables" },
-    { title: "Customizable Ring", downloads: 25000, rating: 4.8, platform: "thingiverse" },
-    { title: "Fidget Spinner Collection", downloads: 22000, rating: 4.6, platform: "thingiverse" },
-    { title: "Raspberry Pi Case", downloads: 20000, rating: 4.9, platform: "printables" },
-    { title: "Cable Clip Set", downloads: 18000, rating: 4.7, platform: "thingiverse" },
-  ],
-  newThisWeek: [
-    { title: "Foldable Phone Stand", price: "Free", platform: "thingiverse" },
-    { title: "Modular Desk Organizer", price: "Free", platform: "printables" },
-    { title: "Gaming Controller Stand", price: "Free", platform: "thingiverse" },
-    { title: "Smart Watch Dock", price: "Free", platform: "printables" },
-    { title: "Adjustable Tablet Mount", price: "Free", platform: "thingiverse" },
-  ],
-};
+import Link from "next/link";
+import { Search } from "lucide-react";
 
 export default function Home() {
   return (
@@ -38,115 +8,86 @@ export default function Home() {
       <header className="border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <a href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
-                <span className="text-black font-bold text-lg">3</span>
-              </div>
-              <span className="font-bold text-xl">3DTrend</span>
-            </a>
+            <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
+              <span className="text-black font-bold text-lg">3</span>
+            </div>
+            <span className="font-bold text-xl">3DTrend</span>
           </div>
           <nav className="flex items-center gap-6">
-            <a href="/" className="text-[#22c55e] font-medium">Trending</a>
-            <a href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</a>
+            <Link href="/" className="text-zinc-400 hover:text-white transition">Home</Link>
+            <Link href="/pricing" className="text-zinc-400 hover:text-white transition">Pricing</Link>
+            <Link href="/login" className="text-zinc-400 hover:text-white transition">Login</Link>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Hero */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <TrendingUp className="w-8 h-8 text-[#22c55e]" />
-            <h1 className="text-4xl font-bold">Trending 3D Prints</h1>
-          </div>
-          <p className="text-zinc-400 text-lg">Discover what's popular in the 3D printing community</p>
-        </div>
+      {/* Hero */}
+      <main className="max-w-4xl mx-auto px-4 py-24 text-center">
+        <h1 className="text-5xl font-bold mb-6">
+          Find Trending <span className="text-[#22c55e]">3D Printed</span> Products
+        </h1>
+        <p className="text-xl text-zinc-400 mb-10">
+          Discover profitable 3D printed items for sale across Amazon, eBay, Etsy, and more.
+        </p>
 
-        {/* Categories */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Flame className="w-6 h-6 text-orange-500" />
-            Trending Categories
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {TRENDING_DATA.categories.map((cat) => (
-              <a
-                key={cat.id}
-                href={`https://www.thingiverse.com/search?type=things&q=${cat.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-[#22c55e] transition group"
-              >
-                <span className="text-3xl mb-2 block">{cat.icon}</span>
-                <h3 className="font-medium text-white group-hover:text-[#22c55e] transition">{cat.name}</h3>
-                <p className="text-zinc-500 text-sm">{cat.count.toLocaleString()} prints</p>
-              </a>
-            ))}
+        {/* Search Box */}
+        <form action="/dashboard" className="max-w-2xl mx-auto">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+              <input
+                type="text"
+                name="q"
+                placeholder="Search for 3D printed products..."
+                className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-lg focusoutline-none focus:border-[#22c55e] transition"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-8 py-4 bg-[#22c55e] text-black font-semibold rounded-xl hover:bg-[#16a34a] transition"
+            >
+              Search
+            </button>
           </div>
-        </section>
+        </form>
 
-        {/* Most Popular */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Star className="w-6 h-6 text-yellow-500" />
-            Most Popular
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {TRENDING_DATA.popular.slice(0, 4).map((item, i) => (
-              <a
-                key={i}
-                href={`https://www.${item.platform}.com/search?q=${encodeURIComponent(item.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-[#22c55e] transition group"
-              >
-                <span className="text-2xl font-bold text-zinc-700 w-8">{i + 1}</span>
-                <div className="flex-1">
-                  <h3 className="font-medium text-white group-hover:text-[#22c55e]">{item.title}</h3>
-                  <div className="flex items-center gap-3 text-sm text-zinc-500">
-                    <span className="flex items-center gap-1">
-                      <Download className="w-4 h-4" />
-                      {item.downloads.toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                      {item.rating}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[#22c55e] text-sm capitalize">{item.platform}</span>
-              </a>
-            ))}
+        {/* Features */}
+        <div className="grid md:grid-cols-3 gap-8 mt-24">
+          <div className="p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
+            <div className="w-12 h-12 bg-[#22c55e]/20 rounded-xl flex items-center justify-center mb-4">
+              <Search className="w-6 h-6 text-[#22c55e]" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Real-Time Search</h3>
+            <p className="text-zinc-400">Search across multiple marketplaces instantly</p>
           </div>
-        </section>
-
-        {/* New This Week */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6">🆕 New This Week</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TRENDING_DATA.newThisWeek.map((item, i) => (
-              <a
-                key={i}
-                href={`https://www.${item.platform}.com/search?q=${encodeURIComponent(item.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-green-500 transition group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white font-medium group-hover:text-green-500">{item.title}</span>
-                  <span className="text-green-500 text-sm">{item.price}</span>
-                </div>
-                <span className="text-zinc-500 text-sm capitalize">{item.platform}</span>
-              </a>
-            ))}
+          <div className="p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
+            <div className="w-12 h-12 bg-[#22c55e]/20 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#22c55e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Market Trends</h3>
+            <p className="text-zinc-400">See search volume and sales data</p>
           </div>
-        </section>
-
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <p className="text-zinc-400 mb-4">Explore thousands of free STL files on Thingiverse and Printables</p>
+          <div className="p-6 bg-zinc-900 rounded-2xl border border-zinc-800">
+            <div className="w-12 h-12 bg-[#22c55e]/20 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#22c55e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Save Favorites</h3>
+            <p className="text-zinc-400">Bookmark items for later reference</p>
+          </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-800 py-8">
+        <div className="max-w-6xl mx-auto px-4 text-center text-zinc-500">
+          <p>© 2026 3DTrend. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }
