@@ -85,14 +85,14 @@ function generatePrintableIdeas(query: string): ProductResult[] {
   // Default generic but useful ideas
   if (templates.length === 0) {
     templates = [
-      `${queryCapitalized} Mount`,
-      `${queryCapitalized} Bracket`,
-      `${queryCapitalized} Stand`,
-      `${queryCapitalized} Holder`,
-      `${queryCapitalized} Case`,
-      `${queryCapitalized} Cover`,
-      `${queryCapitalized} Adapter`,
-      `${queryCapitalized} Replacement`,
+      `Custom ${queryCapitalized} Design`,
+      `${queryCapitalized} Prototype`,
+      `DIY ${queryCapitalized}`,
+      `${queryCapitalized} Model`,
+      `${queryCapitalized} Pattern`,
+      `${queryCapitalized} Component`,
+      `${queryCapitalized} Part`,
+      `${queryCapitalized} Template`,
     ];
   }
   
