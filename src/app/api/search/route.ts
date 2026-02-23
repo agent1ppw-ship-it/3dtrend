@@ -129,6 +129,12 @@ const DEFAULT_PRODUCTS: ProductResult[] = [
   { title: "Build Tak Surface - 3D Printer Adhesive Sheet", price: "$14.99", url: "https://www.amazon.com/s?k=build+tak+3d+printer", platform: "amazon", rating: 4.7, reviews: 11000 },
 ];
 
+// Helper: convert title to Amazon search URL
+function titleToAmazonUrl(title: string): string {
+  const searchTerm = encodeURIComponent(title.replace(/[^a-zA-Z0-9\s]/g, " ").trim());
+  return `https://www.amazon.com/s?k=${searchTerm}`;
+}
+
 function getProductsForQuery(query: string): ProductResult[] {
   const q = query.toLowerCase().trim();
   const words = q.split(/\s+/);
@@ -181,14 +187,17 @@ function getProductsForQuery(query: string): ProductResult[] {
   // Shuffle results for variety
   results = shuffleArray(results);
   
-  // Final filter - keep all but ensure variety
+  // Final filter - keep all but ensure variety, and fix URLs to use title
   const finalResults = results.filter((p, idx) => {
     // Keep everything that's relevant
     if (isRelevant(p.title)) return true;
     // Keep some variety from other categories
     if (p.title.toLowerCase().includes("3d printed")) return idx < 35;
     return false;
-  }).slice(0, 40);
+  }).map(p => ({
+    ...p,
+    url: titleToAmazonUrl(p.title)
+  })).slice(0, 40);
   
   return finalResults;
 }
@@ -257,10 +266,13 @@ function generateRandomProducts(query: string, words: string[]): ProductResult[]
         title = `3D Printed ${mat} ${queryCapitalized} ${cat.suffix}`;
     }
     
+    // Use title as Amazon search query
+    const searchTerm = encodeURIComponent(title.replace(/[^a-zA-Z0-9\s]/g, " ").trim());
+    
     randomResults.push({
       title,
       price: `$${price}.99`,
-      url: `https://www.amazon.com/s?k=3d+printed+${encodeURIComponent(q)}+${encodeURIComponent(cat.suffix.split(" ")[0].toLowerCase())}`,
+      url: `https://www.amazon.com/s?k=${searchTerm}`,
       platform: "amazon",
       rating: Math.round((4.0 + Math.random() * 0.8) * 10) / 10,
       reviews,
